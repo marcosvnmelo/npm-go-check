@@ -21,7 +21,10 @@ var (
 
 var dependenciesCache = map[string]Dependencies{}
 
-var pnpmDependencies = Dependencies{}
+var (
+	pnpmDependencies = Dependencies{}
+	hasPnpmWorkspace = false
+)
 
 func main() {
 	config := struct {

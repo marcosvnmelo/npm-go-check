@@ -199,6 +199,7 @@ func readDirectories(dir string, filePaths *[]string) {
 	if dir == "." && checkIfWorkspaceFileExists(entries) {
 		pnpmWorkspace := readPnpmWorkspace("pnpm-workspace.yaml")
 		pnpmDependencies = pnpmWorkspace.GetPackages()
+		hasPnpmWorkspace = true
 	}
 }
 
@@ -235,13 +236,17 @@ func printDependencies(dependencies Dependencies) {
 	biggestDependencyOriginalVersionLength := 0
 	biggestDependencyLatestVersionLength := 0
 
+	// Calculate the longest name and version strings
+	// for the dependencies
 	for name, version := range entriesIter {
 		if isWorkspacePackage(version) {
 			continue
 		}
 
 		if isCatalogPackage(version) {
-			version = pnpmDependencies[name]
+			if hasPnpmWorkspace {
+				version = pnpmDependencies[name]
+			}
 		}
 
 		if len(name) > biggestDependencyNameLength {
@@ -268,6 +273,7 @@ func printDependencies(dependencies Dependencies) {
 		}
 	}
 
+	// Print the dependencies
 	printCount := 0
 	for _, entry := range entries {
 		name := entry[0]
@@ -278,7 +284,9 @@ func printDependencies(dependencies Dependencies) {
 		}
 
 		if isCatalogPackage(version) {
-			version = pnpmDependencies[name]
+			if hasPnpmWorkspace {
+				version = pnpmDependencies[name]
+			}
 		}
 
 		npmPackage, ok := packagesCache[name]
@@ -304,7 +312,7 @@ func printDependencies(dependencies Dependencies) {
 			}
 		}
 
-		if versionSignal != "" {
+		if versionSignal != "" && versionSignal != "c" {
 			latestVersion = versionSignal + latestVersion
 		}
 
