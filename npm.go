@@ -27,6 +27,10 @@ type Package struct {
 	DistTags DistTags `json:"dist-tags"`
 }
 
+func (p Package) GetLatestVersion() string {
+	return p.DistTags.Latest
+}
+
 type Dependencies map[string]string
 
 type PackageJson struct {
@@ -37,9 +41,7 @@ type PackageJson struct {
 	PeerDependencies     Dependencies `json:"peerDependencies"`
 }
 
-func (p Package) GetLatestVersion() string {
-	return p.DistTags.Latest
-}
+var gitignoreCache = []string{}
 
 func fetchPackage(name string, wg *sync.WaitGroup) {
 	packagesCacheMutex.Lock()
@@ -167,16 +169,18 @@ func readDirectories(dir string, filePaths *[]string) {
 		os.Exit(1)
 	}
 
-	ignoreObject, err := ignore.CompileIgnoreFile(dir + "/.gitignore")
-	hasIgnoreFile := err == nil
+	if file, err := os.ReadFile(dir + "/.gitignore"); err == nil {
+		gitignoreCache = append(gitignoreCache, strings.Split(string(file), "\n")...)
+	}
+
+	ignoreObject := ignore.CompileIgnoreLines(gitignoreCache...)
 
 	for _, entry := range entries {
+		fullName := dir + "/" + entry.Name()
 
-		if hasIgnoreFile && ignoreObject.MatchesPath(entry.Name()) {
+		if ignoreObject.MatchesPath(fullName) {
 			continue
 		}
-
-		fullName := dir + "/" + entry.Name()
 
 		if entry.IsDir() {
 			if entry.Name() == ".git" {
